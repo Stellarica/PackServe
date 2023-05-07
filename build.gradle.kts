@@ -1,5 +1,7 @@
 plugins {
-    kotlin("jvm") version "1.8.21"
+    kotlin("jvm")
+    kotlin("kapt")
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "net.stellarica"
@@ -13,8 +15,16 @@ repositories {
 }
 
 dependencies {
-    compileOnly("com.velocitypowered:velocity-api:3.1.1")
-    annotationProcessor("com.velocitypowered:velocity-api:3.1.1")
+    implementation("com.sksamuel.hoplite:hoplite-core:${property("hoplite_version")}")
+    implementation("com.sksamuel.hoplite:hoplite-hocon:${property("hoplite_version")}")
+    compileOnly("com.velocitypowered:velocity-api:${property("velocity_version")}")
+    kapt("com.velocitypowered:velocity-api:${property("velocity_version")}")
+}
+
+tasks {
+    build {
+        dependsOn(shadowJar)
+    }
 }
 
 kotlin {
