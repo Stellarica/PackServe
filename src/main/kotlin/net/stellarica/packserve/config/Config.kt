@@ -3,7 +3,8 @@ package net.stellarica.packserve.config
 import com.sksamuel.hoplite.ConfigAlias
 
 data class Config(
-	val promptMessage: String,
+	@ConfigAlias("prompt-message") val promptMessage: String,
+	@ConfigAlias("mark-as-required") val markAsRequired: Boolean,
 	@ConfigAlias("kick-if-failed") val kickIfFailed: Boolean,
 	@ConfigAlias("kick-message") val kickMessage: String,
 	val source: Source,

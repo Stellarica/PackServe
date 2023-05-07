@@ -7,11 +7,12 @@ import kotlin.io.path.createDirectories
 class StaticPackOutput(
 	private val output: Path,
 	private val downloadUrl: String
-): ResourcePackOutput {
+) : ResourcePackOutput {
 	override fun outputPack(pack: Path) {
 		output.parent.createDirectories()
 		pack.copyTo(output)
 	}
+
 	override fun getDownloadURL(): String = downloadUrl
 	override fun getPackSha1(): ByteArray = getPackSha1(output)
 }

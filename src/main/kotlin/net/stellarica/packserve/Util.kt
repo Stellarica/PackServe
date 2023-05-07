@@ -1,5 +1,6 @@
 package net.stellarica.packserve
 
+import net.kyori.adventure.text.minimessage.MiniMessage
 import java.nio.file.Path
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
@@ -21,7 +22,7 @@ fun zipDirectory(dir: Path, out: Path): Path {
 	ZipOutputStream(out.outputStream().buffered()).use { z ->
 		dir.walk().forEach { file ->
 			val zipFileName = file.absolute().relativeTo(dir.absolute())
-			val entry = ZipEntry( "$zipFileName${(if (file.isDirectory()) "/" else "" )}")
+			val entry = ZipEntry("$zipFileName${(if (file.isDirectory()) "/" else "")}")
 			z.putNextEntry(entry)
 			if (file.isRegularFile()) {
 				file.inputStream().use { f -> f.copyTo(z) }
@@ -33,7 +34,7 @@ fun zipDirectory(dir: Path, out: Path): Path {
 
 fun unzipFile(file: Path, out: Path) {
 	out.createDirectories()
-	ZipFile(file.toFile()).use {zip ->
+	ZipFile(file.toFile()).use { zip ->
 		for (entry in zip.entries()) {
 			val path = out.resolve(entry.name)
 			path.parent.createDirectories()
@@ -60,3 +61,5 @@ fun newTempFile(): Path {
 	file.toFile().deleteOnExit()
 	return file
 }
+
+fun String.asMiniMessage() = MiniMessage.miniMessage().deserialize(this)

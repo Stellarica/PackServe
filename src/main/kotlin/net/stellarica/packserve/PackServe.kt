@@ -4,6 +4,7 @@ import com.google.inject.Inject
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addFileSource
 import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.player.PlayerResourcePackStatusEvent
 import com.velocitypowered.api.event.player.ServerPostConnectEvent
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
 import com.velocitypowered.api.plugin.Plugin
@@ -16,7 +17,6 @@ import net.stellarica.packserve.source.GitHubSource
 import net.stellarica.packserve.source.LocalDirectorySource
 import net.stellarica.packserve.source.LocalFileSource
 import org.slf4j.Logger
-import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
@@ -68,7 +68,7 @@ class PackServe @Inject constructor(
 			.loadConfigOrThrow<Config>()
 	}
 
-	fun createPackManager() {
+	private fun createPackManager() {
 		if (!config.configured) {
 			logger.error("PackServe has not been configured!")
 			return
@@ -103,7 +103,19 @@ class PackServe @Inject constructor(
 	@Subscribe
 	fun onPlayerJoin(event: ServerPostConnectEvent) {
 		val pack = manager.getPackInfo()
-		if (event.player.appliedResourcePack != pack)
+		if (event.player.appliedResourcePack != pack && event.player.pendingResourcePack != pack)
 			event.player.sendResourcePackOffer(pack)
+	}
+
+	@Subscribe
+	fun onResourcePackStatus(event: PlayerResourcePackStatusEvent) {
+		if (
+			config.kickIfFailed &&
+			event.status != PlayerResourcePackStatusEvent.Status.ACCEPTED &&
+			event.status != PlayerResourcePackStatusEvent.Status.SUCCESSFUL
+			)
+		{
+			event.player.disconnect(config.kickMessage.asMiniMessage())
+		}
 	}
 }

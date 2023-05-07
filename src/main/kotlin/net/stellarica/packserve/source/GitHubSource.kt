@@ -7,7 +7,7 @@ import net.stellarica.packserve.unzipFile
 import net.stellarica.packserve.zipDirectory
 import java.net.URL
 import java.nio.file.Path
-import kotlin.io.path.createTempDirectory
+
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.outputStream
 

@@ -13,7 +13,7 @@ class LocalDirectorySource(private val dir: Path) : ResourcePackSource {
 
 	override fun getPackZip(): Path {
 		val temp = newTempFile()
-		zipDirectory(dir,temp)
+		zipDirectory(dir, temp)
 		return temp
 	}
 }
