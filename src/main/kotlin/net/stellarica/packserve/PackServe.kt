@@ -9,16 +9,12 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
 import com.velocitypowered.api.plugin.Plugin
 import com.velocitypowered.api.plugin.annotation.DataDirectory
 import com.velocitypowered.api.proxy.ProxyServer
-import com.velocitypowered.api.proxy.player.ResourcePackInfo
-import net.kyori.adventure.text.Component
 import net.stellarica.packserve.config.Config
 import net.stellarica.packserve.output.HttpServerOutput
-import net.stellarica.packserve.output.ResourcePackOutput
 import net.stellarica.packserve.output.StaticPackOutput
 import net.stellarica.packserve.source.GitHubSource
 import net.stellarica.packserve.source.LocalDirectorySource
 import net.stellarica.packserve.source.LocalFileSource
-import net.stellarica.packserve.source.ResourcePackSource
 import org.slf4j.Logger
 import java.net.URL
 import java.nio.file.Files
@@ -41,9 +37,8 @@ class PackServe @Inject constructor(
 	private val logger: Logger,
 	@DataDirectory val dataDir: Path
 ) {
-	private lateinit var config: Config
-	private lateinit var source: ResourcePackSource
-	private lateinit var output: ResourcePackOutput
+	lateinit var config: Config
+	private lateinit var manager: PackManager
 
 	companion object {
 		lateinit var instance: PackServe
@@ -52,7 +47,12 @@ class PackServe @Inject constructor(
 	@Subscribe
 	fun onProxyInit(event: ProxyInitializeEvent) {
 		instance = this
+		loadConfig()
+		createPackManager()
+		manager.processPack()
+	}
 
+	fun loadConfig() {
 		val configPath = dataDir.resolve("packserve.conf")
 
 		if (!configPath.exists()) {
@@ -66,13 +66,15 @@ class PackServe @Inject constructor(
 			.addFileSource(configPath.toFile())
 			.build()
 			.loadConfigOrThrow<Config>()
+	}
 
+	fun createPackManager() {
 		if (!config.configured) {
 			logger.error("PackServe has not been configured!")
 			return
 		}
 
-		source = if (config.source.useGitHub) {
+		val source = if (config.source.useGitHub) {
 			logger.info("Using GitHUb resource pack source")
 			GitHubSource(URL(config.source.repository), config.source.branch)
 		} else {
@@ -89,20 +91,19 @@ class PackServe @Inject constructor(
 			}
 		}
 
-		output = if (config.useIntegratedServer) {
-			HttpServerOutput(source, config.server.port, URL(config.server.externalAddress))
+		val output = if (config.useIntegratedServer) {
+			HttpServerOutput(config.server.port, URL(config.server.externalAddress))
 		} else {
-			StaticPackOutput(source, Path.of(config.static.outputFile), config.static.externalUrl)
+			StaticPackOutput(Path.of(config.static.outputFile), config.static.externalUrl)
 		}
-	}
 
-	fun getPackInfo(): ResourcePackInfo = server.createResourcePackBuilder(output.getDownloadURL())
-		.setHash(output.getPackSha1())
-		.setPrompt(Component.text(config.promptMessage))
-		.build()
+		manager = PackManager(source, output)
+	}
 
 	@Subscribe
 	fun onPlayerJoin(event: ServerPostConnectEvent) {
-		event.player.sendResourcePackOffer(getPackInfo())
+		val pack = manager.getPackInfo()
+		if (event.player.appliedResourcePack != pack)
+			event.player.sendResourcePackOffer(pack)
 	}
 }

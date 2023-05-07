@@ -4,9 +4,15 @@ import net.stellarica.packserve.source.ResourcePackSource
 import java.nio.file.Path
 
 class StaticPackOutput(
-	override var source: ResourcePackSource,
-	private var target: Path,
-	private var downloadUrl: String
-) : ResourcePackOutput {
+	private val output: Path,
+	private val downloadUrl: String
+): ResourcePackOutput {
+	override fun outputPack(pack: Path) {
+		TODO()
+	}
+
 	override fun getDownloadURL(): String = downloadUrl
+	override fun getPackSha1(): ByteArray {
+		TODO("Not yet implemented")
+	}
 }
