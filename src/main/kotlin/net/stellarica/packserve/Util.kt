@@ -7,6 +7,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectories
+import kotlin.io.path.createTempDirectory
 import kotlin.io.path.inputStream
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isRegularFile
@@ -46,4 +47,16 @@ fun unzipFile(file: Path, out: Path) {
 			}
 		}
 	}
+}
+
+fun newTempDirectory(): Path {
+	val dir = createTempDirectory()
+	dir.toFile().deleteOnExit()
+	return dir
+}
+
+fun newTempFile(): Path {
+	val file = kotlin.io.path.createTempFile()
+	file.toFile().deleteOnExit()
+	return file
 }

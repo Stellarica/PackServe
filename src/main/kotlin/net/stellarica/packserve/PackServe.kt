@@ -34,7 +34,7 @@ import kotlin.io.path.isDirectory
 )
 class PackServe @Inject constructor(
 	val server: ProxyServer,
-	private val logger: Logger,
+	val logger: Logger,
 	@DataDirectory val dataDir: Path
 ) {
 	lateinit var config: Config
@@ -76,7 +76,7 @@ class PackServe @Inject constructor(
 
 		val source = if (config.source.useGitHub) {
 			logger.info("Using GitHUb resource pack source")
-			GitHubSource(URL(config.source.repository), config.source.branch)
+			GitHubSource(config.source.repository, config.source.branch)
 		} else {
 			val path = Path.of(config.source.localPath)
 			if (path.isDirectory()) {
@@ -92,7 +92,7 @@ class PackServe @Inject constructor(
 		}
 
 		val output = if (config.useIntegratedServer) {
-			HttpServerOutput(config.server.port, URL(config.server.externalAddress))
+			HttpServerOutput(config.server.port, config.server.externalAddress)
 		} else {
 			StaticPackOutput(Path.of(config.static.outputFile), config.static.externalUrl)
 		}

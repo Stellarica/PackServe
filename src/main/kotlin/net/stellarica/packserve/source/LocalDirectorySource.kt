@@ -1,5 +1,7 @@
 package net.stellarica.packserve.source
 
+import net.stellarica.packserve.newTempFile
+import net.stellarica.packserve.zipDirectory
 import java.nio.file.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
@@ -10,6 +12,8 @@ class LocalDirectorySource(private val dir: Path) : ResourcePackSource {
 	}
 
 	override fun getPackZip(): Path {
-		TODO()
+		val temp = newTempFile()
+		zipDirectory(dir,temp)
+		return temp
 	}
 }

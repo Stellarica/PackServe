@@ -1,18 +1,17 @@
 package net.stellarica.packserve.output
 
-import net.stellarica.packserve.source.ResourcePackSource
 import java.nio.file.Path
+import kotlin.io.path.copyTo
+import kotlin.io.path.createDirectories
 
 class StaticPackOutput(
 	private val output: Path,
 	private val downloadUrl: String
 ): ResourcePackOutput {
 	override fun outputPack(pack: Path) {
-		TODO()
+		output.parent.createDirectories()
+		pack.copyTo(output)
 	}
-
 	override fun getDownloadURL(): String = downloadUrl
-	override fun getPackSha1(): ByteArray {
-		TODO("Not yet implemented")
-	}
+	override fun getPackSha1(): ByteArray = getPackSha1(output)
 }
