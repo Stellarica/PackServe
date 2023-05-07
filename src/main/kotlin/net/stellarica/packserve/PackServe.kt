@@ -4,19 +4,22 @@ import com.google.inject.Inject
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addFileSource
 import com.velocitypowered.api.event.Subscribe
-import com.velocitypowered.api.event.player.PlayerChatEvent
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
 import com.velocitypowered.api.plugin.Plugin
 import com.velocitypowered.api.plugin.annotation.DataDirectory
 import com.velocitypowered.api.proxy.ProxyServer
-import net.kyori.adventure.text.Component
+import net.stellarica.packserve.config.Config
+import net.stellarica.packserve.source.GitHubSource
+import net.stellarica.packserve.source.LocalDirectorySource
+import net.stellarica.packserve.source.LocalFileSource
+import net.stellarica.packserve.source.ResourcePackSource
 import org.slf4j.Logger
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
-import java.security.MessageDigest
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
 
 @Suppress("Unused")
 @Plugin(
@@ -33,12 +36,16 @@ class PackServe @Inject constructor(
 	@DataDirectory val dataDir: Path
 ) {
 	private lateinit var config: Config
+	private lateinit var source: ResourcePackSource
 
-	private lateinit var packHash: ByteArray
-	private lateinit var packURL: String
+	companion object {
+		lateinit var instance: PackServe
+	}
 
 	@Subscribe
 	fun onProxyInit(event: ProxyInitializeEvent) {
+		instance = this
+
 		val configPath = dataDir.resolve("packserve.conf")
 
 		if (!configPath.exists()) {
@@ -53,26 +60,26 @@ class PackServe @Inject constructor(
 			.build()
 			.loadConfigOrThrow<Config>()
 
-		/*
-		packURL =  config.repository + "/archive/refs/heads/" + config.branch + ".zip"
-		packHash = config.hash.toByteArray()
-		if (packHash.size != 20) {
-			logger.warn("Attempting to get SHA-1 hash of resource pack, as it wasn't specified!")
-			packHash = MessageDigest
-				.getInstance("SHA-1")
-				.digest(URL(packURL).openConnection().getInputStream().readAllBytes())
-		}*/
-	}
+		if (!config.configured) {
+			logger.error("PackServe has not been configured!")
+			return
+		}
 
-	@Subscribe
-	fun onResourcePack(event: PlayerChatEvent) {
-		logger.warn("sending pack")
-		val pack = server.createResourcePackBuilder(packURL)
-			.setHash(packHash)
-			.setPrompt(Component.text("Download! Or perish!"))
-			.setShouldForce(true)
-			.build()
-
-		event.player.sendResourcePackOffer(pack)
+		source = if (config.source.useGitHub) {
+			logger.info("Using GitHUb resource pack source")
+			GitHubSource(URL(config.source.repository), config.source.branch)
+		} else {
+			val path = Path.of(config.source.localPath)
+			if (path.isDirectory()) {
+				logger.info("Using local directory resource pack source")
+				LocalDirectorySource(path)
+			} else if (path.exists()) {
+				logger.info("Using local file resource pack source")
+				LocalFileSource(path)
+			} else {
+				logger.error("No valid resource pack source specified!")
+				return
+			}
+		}
 	}
 }
