@@ -10,7 +10,7 @@ class StaticPackOutput(
 ) : ResourcePackOutput {
 	override fun start(pack: Path) {
 		output.parent.createDirectories()
-		pack.copyTo(output)
+		pack.copyTo(output, overwrite = true)
 	}
 
 	override fun stop() {}
