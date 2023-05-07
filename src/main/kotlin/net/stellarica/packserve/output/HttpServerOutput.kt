@@ -17,7 +17,7 @@ class HttpServerOutput(
 ) : ResourcePackOutput {
 	private lateinit var pack: Path
 	private lateinit var server: Http4kServer
-	override fun outputPack(pack: Path) {
+	override fun start(pack: Path) {
 		instance.logger.warn("Using internal HTTP server to host the pack.")
 		instance.logger.warn("For security reasons, this is not recommended on production servers!")
 
@@ -28,6 +28,10 @@ class HttpServerOutput(
 		this.server = static(Directory(tempDir.absolute().toString()))
 			.asServer(Jetty(port))
 			.start()
+	}
+
+	override fun stop() {
+		server.stop()
 	}
 
 	override fun getDownloadURL(): String = externalAddress.removeSuffix("/") + "/pack.zip"

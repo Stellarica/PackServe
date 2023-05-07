@@ -5,7 +5,8 @@ import java.security.MessageDigest
 import kotlin.io.path.readBytes
 
 interface ResourcePackOutput {
-	fun outputPack(pack: Path)
+	fun start(pack: Path)
+	fun stop()
 	fun getDownloadURL(): String
 	fun getPackSha1(): ByteArray
 

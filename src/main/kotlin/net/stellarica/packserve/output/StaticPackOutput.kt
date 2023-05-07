@@ -8,11 +8,12 @@ class StaticPackOutput(
 	private val output: Path,
 	private val downloadUrl: String
 ) : ResourcePackOutput {
-	override fun outputPack(pack: Path) {
+	override fun start(pack: Path) {
 		output.parent.createDirectories()
 		pack.copyTo(output)
 	}
 
+	override fun stop() {}
 	override fun getDownloadURL(): String = downloadUrl
 	override fun getPackSha1(): ByteArray = getPackSha1(output)
 }

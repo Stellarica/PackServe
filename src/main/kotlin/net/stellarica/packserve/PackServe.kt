@@ -1,5 +1,6 @@
 package net.stellarica.packserve
 
+import com.example.velocityplugin.packPromptCommand
 import com.google.inject.Inject
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addFileSource
@@ -10,6 +11,7 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
 import com.velocitypowered.api.plugin.Plugin
 import com.velocitypowered.api.plugin.annotation.DataDirectory
 import com.velocitypowered.api.proxy.ProxyServer
+import net.stellarica.packserve.command.configReloadCommand
 import net.stellarica.packserve.config.Config
 import net.stellarica.packserve.output.HttpServerOutput
 import net.stellarica.packserve.output.StaticPackOutput
@@ -38,7 +40,7 @@ class PackServe @Inject constructor(
 	@DataDirectory val dataDir: Path
 ) {
 	lateinit var config: Config
-	private lateinit var manager: PackManager
+	lateinit var manager: PackManager
 
 	companion object {
 		lateinit var instance: PackServe
@@ -47,9 +49,10 @@ class PackServe @Inject constructor(
 	@Subscribe
 	fun onProxyInit(event: ProxyInitializeEvent) {
 		instance = this
+		server.commandManager.register(packPromptCommand())
+		server.commandManager.register(configReloadCommand())
 		loadConfig()
 		createPackManager()
-		manager.processPack()
 	}
 
 	fun loadConfig() {
@@ -68,7 +71,11 @@ class PackServe @Inject constructor(
 			.loadConfigOrThrow<Config>()
 	}
 
-	private fun createPackManager() {
+	fun createPackManager() {
+		// if we have an old manager going, stop it
+		// (mostly for the http server)
+		if (this::manager.isInitialized) manager.stop()
+
 		if (!config.configured) {
 			logger.error("PackServe has not been configured!")
 			return
@@ -101,10 +108,9 @@ class PackServe @Inject constructor(
 	}
 
 	@Subscribe
+	@Suppress("UnstableAPIUsage")
 	fun onPlayerJoin(event: ServerPostConnectEvent) {
-		val pack = manager.getPackInfo()
-		if (event.player.appliedResourcePack != pack && event.player.pendingResourcePack != pack)
-			event.player.sendResourcePackOffer(pack)
+		manager.sendPackPrompt(event.player)
 	}
 
 	@Subscribe
@@ -113,8 +119,7 @@ class PackServe @Inject constructor(
 			config.kickIfFailed &&
 			event.status != PlayerResourcePackStatusEvent.Status.ACCEPTED &&
 			event.status != PlayerResourcePackStatusEvent.Status.SUCCESSFUL
-			)
-		{
+		) {
 			event.player.disconnect(config.kickMessage.asMiniMessage())
 		}
 	}
