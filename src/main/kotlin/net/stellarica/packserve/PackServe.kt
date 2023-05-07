@@ -4,11 +4,17 @@ import com.google.inject.Inject
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addFileSource
 import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.player.ServerPostConnectEvent
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
 import com.velocitypowered.api.plugin.Plugin
 import com.velocitypowered.api.plugin.annotation.DataDirectory
 import com.velocitypowered.api.proxy.ProxyServer
+import com.velocitypowered.api.proxy.player.ResourcePackInfo
+import net.kyori.adventure.text.Component
 import net.stellarica.packserve.config.Config
+import net.stellarica.packserve.output.HttpServerOutput
+import net.stellarica.packserve.output.ResourcePackOutput
+import net.stellarica.packserve.output.StaticPackOutput
 import net.stellarica.packserve.source.GitHubSource
 import net.stellarica.packserve.source.LocalDirectorySource
 import net.stellarica.packserve.source.LocalFileSource
@@ -31,12 +37,13 @@ import kotlin.io.path.isDirectory
 	authors = ["trainb0y"]
 )
 class PackServe @Inject constructor(
-	private val server: ProxyServer,
+	val server: ProxyServer,
 	private val logger: Logger,
 	@DataDirectory val dataDir: Path
 ) {
 	private lateinit var config: Config
 	private lateinit var source: ResourcePackSource
+	private lateinit var output: ResourcePackOutput
 
 	companion object {
 		lateinit var instance: PackServe
@@ -81,5 +88,21 @@ class PackServe @Inject constructor(
 				return
 			}
 		}
+
+		output = if (config.useIntegratedServer) {
+			HttpServerOutput(source, config.server.port, URL(config.server.externalAddress))
+		} else {
+			StaticPackOutput(source, Path.of(config.static.outputFile), config.static.externalUrl)
+		}
+	}
+
+	fun getPackInfo(): ResourcePackInfo = server.createResourcePackBuilder(output.getDownloadURL())
+		.setHash(output.getPackSha1())
+		.setPrompt(Component.text(config.promptMessage))
+		.build()
+
+	@Subscribe
+	fun onPlayerJoin(event: ServerPostConnectEvent) {
+		event.player.sendResourcePackOffer(getPackInfo())
 	}
 }
